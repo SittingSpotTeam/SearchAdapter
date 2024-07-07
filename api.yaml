@@ -1,175 +1,74 @@
 openapi: 3.0.3
 info:
-  title: service name
-  description: some description
+  title: SearchAdapter
+  description: Adapter on internal data layer and extarnal services for sitting spots
   version: 1.0.0
 servers:
-  - url: https://petstore3.swagger.io/api/v3
+  - url: https://search-adapter/api/v3
 paths:
-  /example:
+  /:
     get:
-      summary: example description
-      description: Update an existing pet by Id
-      operationId: some id
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pet'          
-        '400':
-          description: Invalid ID supplied
-        '404':
-          description: Pet not found
-        '422':
-          description: Validation exception
-    post:
-      summary: example description
-      description: Add a new pet to the store
-      operationId: addPet
-      requestBody:
-        description: Create a new pet in the store
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Pet'
-        required: true
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pet'          
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/Pet'
-        '400':
-          description: Invalid input
-        '422':
-          description: Validation exception
-  /pet/{petId}:
-    get:
-      tags:
-        - pet
-      summary: Find pet by ID
-      description: Returns a single pet
-      operationId: getPetById
+      summary: Get sitting spots given parameters
+      description: Search for sitting spots on external db and internal data layer, updating the dl with new entries
+      operationId: searchSittingSpots
       parameters:
-        - name: petId
-          in: path
-          description: ID of pet to return
+        - name: location
+          in: query
+          description: General position of the search
           required: true
           schema:
-            type: integer
-            format: int64
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pet'          
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/Pet'
-        '400':
-          description: Invalid ID supplied
-        '404':
-          description: Pet not found
-      security:
-        - api_key: []
-        - petstore_auth:
-            - write:pets
-            - read:pets
-    post:
-      tags:
-        - pet
-      summary: Updates a pet in the store with form data
-      description: ''
-      operationId: updatePetWithForm
-      parameters:
-        - name: petId
-          in: path
-          description: ID of pet that needs to be updated
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - name: name
+            $ref: '#/components/schemas/Area'
+        - name: tags
           in: query
-          description: Name of pet that needs to be updated
-          schema:
-            type: string
-        - name: status
-          in: query
-          description: Status of pet that needs to be updated
-          schema:
-            type: string
-      responses:
-        '400':
-          description: Invalid input
-      security:
-        - petstore_auth:
-            - write:pets
-            - read:pets
-    delete:
-      tags:
-        - pet
-      summary: Deletes a pet
-      description: delete a pet
-      operationId: deletePet
-      parameters:
-        - name: api_key
-          in: header
-          description: ''
+          description: Tags of the sitting spot
           required: false
           schema:
-            type: string
-        - name: petId
-          in: path
-          description: Pet id to delete
-          required: true
+            type: array
+            items:
+              $ref: '#/components/schemas/Tag'
+        - name: labels
+          in: query
+          description: Labels of the sitting spot
+          required: false
           schema:
-            type: integer
-            format: int64
+            type: array
+            items:
+              type: string
       responses:
-        '400':
-          description: Invalid pet value
-      security:
-        - petstore_auth:
-            - write:pets
-            - read:pets
+        200:
+          description: Operation succesful
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QueryResult'
 components:
   schemas:
-    Order:
-      type: object
+    Location:
+      description: x,y coordinates
       properties:
-        id:
-          type: integer
-          format: int64
-          example: 10
-        petId:
-          type: integer
-          format: int64
-          example: 198772
-        quantity:
-          type: integer
-          format: int32
-          example: 7
-        shipDate:
+        x:
+          type: number
+        y:
+          type: number
+    Area:
+      description: An area with a location as center
+      properties:
+        center:
+          $ref: '#/components/schemas/Location'
+        range:
+          type: number
+    Tag:
+      properties:
+        key:
           type: string
-          format: date-time
-        status:
+        value:
           type: string
-          description: Order Status
-          example: approved
-          enum:
-            - placed
-            - approved
-            - delivered
-        complete:
-          type: boolean
-      xml:
-        name: order
+    QueryResult:
+      properties:
+        spotId:
+          type: string
+          format: uuid
+        location:
+          $ref: '#/components/schemas/Location'
