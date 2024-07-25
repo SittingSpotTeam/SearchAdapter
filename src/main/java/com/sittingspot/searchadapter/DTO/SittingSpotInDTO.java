@@ -7,5 +7,5 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
-public record SittingSpotInDTO(Integer id, Location location, List<Tag> tags) implements Serializable {
+public record SittingSpotInDTO(String id, Location location, List<Tag> tags) implements Serializable {
 }

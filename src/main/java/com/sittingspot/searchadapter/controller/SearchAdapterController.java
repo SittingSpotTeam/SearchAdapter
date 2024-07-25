@@ -64,7 +64,7 @@ public class SearchAdapterController {
                 // convert list of elements to list of sitting spot
                 osmData = data.getElements()
                         .stream()
-                        .map(x -> new SittingSpotInDTO(x.id(), new Location(x.lat(),x.lon()), x.tags()
+                        .map(x -> new SittingSpotInDTO(x.id().toString(), new Location(x.lat(),x.lon()), x.tags()
                                 .entrySet()
                                 .stream()
                                 .map(t -> new Tag(t.getKey(), t.getValue()))
