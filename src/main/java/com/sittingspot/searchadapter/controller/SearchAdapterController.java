@@ -45,6 +45,9 @@ public class SearchAdapterController {
 
         List<SittingSpotInDTO> osmData = new ArrayList<>();
 
+        // as labels are unique to our system, if the query involves elements with a certain combination of labels
+        // only the sitting spot already in our data layer can match the description, so, it does a request to osm
+        // only if there are no restriction on labels.
         if(labels.isEmpty()) {
             StringBuilder osmQuery = new StringBuilder("[out:json];\nnode[amenity=bench]");
             for(var tag : tags) {
@@ -83,9 +86,8 @@ public class SearchAdapterController {
         
         if(dlResult.statusCode() == 200) {
             List<SittingSpotOutDTO> dlData = (new ObjectMapper()).readerForListOf(SittingSpotOutDTO.class).readValue(dlResult.body());
-            
-            // sitting spot che sono in osm data ma non in dl data
-            
+
+            // update our data layer with new entries from osm
             var newSpots = osmData.stream().filter(x -> !dlData.stream().anyMatch(s -> s.id() == x.id())).toList();
             for(var newSpot : newSpots) {
                 var dlPostRequest = HttpRequest.newBuilder().uri(URI.create("http://" + sittingspotdlUrl + sittingspotdlApiVersion + "/")).POST(HttpRequest.BodyPublishers.ofString(new ObjectMapper().writeValueAsString(newSpot))).build();
