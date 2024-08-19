@@ -29,13 +29,15 @@ public class SearchAdapterController {
     private String osmEndpoint;
 
     @GetMapping("/")
-    public List<QueryResult> search(@RequestParam("location") Area location,
+    public List<QueryResult> search(@RequestParam("x") Double x,
+                                    @RequestParam("y") Double y,
+                                    @RequestParam("area") Double area,
                                     @RequestParam(value = "tags",required = false) List<Tag> tags,
                                     @RequestParam(value = "labels",required = false) List<String> labels) throws IOException, InterruptedException {
         var client = HttpClient.newHttpClient();
 
         List<SittingSpotInDTO> osmData = new ArrayList<>();
-
+        var location = new Area(new Location(x,y),area);
         // as labels are unique to our system, if the query involves elements with a certain combination of labels
         // only the sitting spot already in our data layer can match the description, so, it does a request to osm
         // only if there are no restriction on labels.
@@ -61,7 +63,7 @@ public class SearchAdapterController {
                 // convert list of elements to list of sitting spot
                 osmData = data.getElements()
                         .stream()
-                        .map(x -> new SittingSpotInDTO(x.id().toString(), new Location(x.lon(),x.lat()), x.tags()
+                        .map(e -> new SittingSpotInDTO(e.id().toString(), new Location(e.lon(),e.lat()), e.tags()
                                 .entrySet()
                                 .stream()
                                 .map(t -> new Tag(t.getKey(), t.getValue()))
@@ -71,7 +73,7 @@ public class SearchAdapterController {
         }
 
         var dlRequest = HttpRequest.newBuilder()
-                .uri(URI.create("http://" + sittingspotdlUrl + "/find" + "?location="+location+"&tags="+tags+"&labels="+labels)).GET().build();
+                .uri(URI.create("http://" + sittingspotdlUrl + "/find" + "?x="+x+"&y="+y+"&area="+area+"&tags="+tags+"&labels="+labels)).GET().build();
         
         var dlResult = client.send(dlRequest, HttpResponse.BodyHandlers.ofString());
         
@@ -79,7 +81,7 @@ public class SearchAdapterController {
             List<SittingSpotOutDTO> dlData = (new ObjectMapper()).readerForListOf(SittingSpotOutDTO.class).readValue(dlResult.body());
 
             // update our data layer with new entries from osm
-            var newSpots = osmData.stream().filter(x -> !dlData.stream().anyMatch(s -> s.id() == x.id())).toList();
+            var newSpots = osmData.stream().filter(e -> !dlData.stream().anyMatch(s -> s.id() == e.id())).toList();
             for(var newSpot : newSpots) {
                 var dlPostRequest = HttpRequest.newBuilder().uri(URI.create("http://" + sittingspotdlUrl + "/")).POST(HttpRequest.BodyPublishers.ofString(new ObjectMapper().writeValueAsString(newSpot))).build();
                 client.send(dlPostRequest, HttpResponse.BodyHandlers.ofString());
@@ -87,8 +89,8 @@ public class SearchAdapterController {
             
             List<QueryResult> ret = new ArrayList<>();
             
-            ret.addAll(newSpots.stream().map(x -> new QueryResult(x.id(),x.location())).toList());
-            ret.addAll(dlData.stream().map(x -> new QueryResult(x.id(),x.location())).toList());
+            ret.addAll(newSpots.stream().map(e -> new QueryResult(e.id(),e.location())).toList());
+            ret.addAll(dlData.stream().map(e -> new QueryResult(e.id(),e.location())).toList());
             
             return ret;
         }
