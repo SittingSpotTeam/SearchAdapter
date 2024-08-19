@@ -25,14 +25,8 @@ public class SearchAdapterController {
     @Value("${sittingspot.sittingspotdl.url}")
     private String sittingspotdlUrl;
 
-    @Value("${sittingspot.osm.host}")
-    private String osmHost;
-
-    @Value("${sittingspot.osm.port}")
-    private String osmPort;
-
-    @Value("${sittingspot.osm.overpass.api}")
-    private String osmOverpassApi;
+    @Value("${sittingspot.osm.endpoint}")
+    private String osmEndpoint;
 
     @GetMapping("/")
     public List<QueryResult> search(@RequestParam("location") Area location,
@@ -53,7 +47,7 @@ public class SearchAdapterController {
             osmQuery.append("(around:" + location.range() + "," + location.center().y() + ","+location.center().x()+");\n" +"out body;");
 
             var osmRequest = HttpRequest.newBuilder()
-                    .uri(URI.create("https://" + osmHost + ":" + osmPort + "/" + osmOverpassApi))
+                    .uri(URI.create(osmEndpoint))
                     .POST(HttpRequest.BodyPublishers.ofString(osmQuery.toString())).build();
 
             var osmResult = client.send(osmRequest, HttpResponse.BodyHandlers.ofString());
