@@ -25,9 +25,6 @@ public class SearchAdapterController {
     @Value("${sittingspot.sittingspotdl.url}")
     private String sittingspotdlUrl;
 
-    @Value("${sittingspot.sittingspotdl.api.version}")
-    private String sittingspotdlApiVersion;
-
     @Value("${sittingspot.osm.host}")
     private String osmHost;
 
@@ -80,7 +77,7 @@ public class SearchAdapterController {
         }
 
         var dlRequest = HttpRequest.newBuilder()
-                .uri(URI.create("http://" + sittingspotdlUrl + sittingspotdlApiVersion + "/find" + "?location="+location+"&tags="+tags+"&labels="+labels)).GET().build();
+                .uri(URI.create("http://" + sittingspotdlUrl + "/find" + "?location="+location+"&tags="+tags+"&labels="+labels)).GET().build();
         
         var dlResult = client.send(dlRequest, HttpResponse.BodyHandlers.ofString());
         
@@ -90,7 +87,7 @@ public class SearchAdapterController {
             // update our data layer with new entries from osm
             var newSpots = osmData.stream().filter(x -> !dlData.stream().anyMatch(s -> s.id() == x.id())).toList();
             for(var newSpot : newSpots) {
-                var dlPostRequest = HttpRequest.newBuilder().uri(URI.create("http://" + sittingspotdlUrl + sittingspotdlApiVersion + "/")).POST(HttpRequest.BodyPublishers.ofString(new ObjectMapper().writeValueAsString(newSpot))).build();
+                var dlPostRequest = HttpRequest.newBuilder().uri(URI.create("http://" + sittingspotdlUrl + "/")).POST(HttpRequest.BodyPublishers.ofString(new ObjectMapper().writeValueAsString(newSpot))).build();
                 client.send(dlPostRequest, HttpResponse.BodyHandlers.ofString());
             }
             
