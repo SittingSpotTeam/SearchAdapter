@@ -1,0 +1,1 @@
+docker build . -t sittingspotapp/searchadapter:1.3-dev && docker push sittingspotapp/searchadapter:1.3-dev
