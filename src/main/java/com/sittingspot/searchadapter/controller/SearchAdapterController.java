@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sittingspot.searchadapter.DTO.SittingSpotInDTO;
 import com.sittingspot.searchadapter.DTO.SittingSpotOutDTO;
 import com.sittingspot.searchadapter.models.*;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,7 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 
+@Log4j2
 @RestController("/api/v1")
 public class SearchAdapterController {
 
@@ -47,7 +49,7 @@ public class SearchAdapterController {
                 osmQuery.append("[").append(tag.key()).append("=").append(tag.value()).append("]");
             }
             osmQuery.append("(around:" + location.range() + "," + location.center().y() + ","+location.center().x()+");\n" +"out body;");
-
+            log.info("Sending request: " + osmEndpoint +" "+ osmQuery.toString());
             var osmRequest = HttpRequest.newBuilder()
                     .uri(URI.create(osmEndpoint))
                     .POST(HttpRequest.BodyPublishers.ofString(osmQuery.toString())).build();
@@ -55,7 +57,7 @@ public class SearchAdapterController {
             var osmResult = client.send(osmRequest, HttpResponse.BodyHandlers.ofString());
 
             // TODO: check osm return codes
-
+            log.info("Got response code " + osmResult.statusCode());
             if(osmResult.statusCode() == 200) {
                 OsmQueryResult data = new ObjectMapper().readValue(osmResult.body(), OsmQueryResult.class);
                 // lon = x, lat = y
@@ -72,18 +74,27 @@ public class SearchAdapterController {
             }
         }
 
+        var searchRequestUrl = "http://" + sittingspotdlUrl  + "?x="+x+"&y="+y+"&area="+area;
+        if(tags != null){
+            searchRequestUrl += "&tags="+tags;
+        }
+        if(labels != null){
+            searchRequestUrl += "&labels="+labels;
+        }
+        log.info("Sending request: " + searchRequestUrl);
+
         var dlRequest = HttpRequest.newBuilder()
-                .uri(URI.create("http://" + sittingspotdlUrl + "/find" + "?x="+x+"&y="+y+"&area="+area+"&tags="+tags+"&labels="+labels)).GET().build();
+                .uri(URI.create(searchRequestUrl)).GET().build();
         
         var dlResult = client.send(dlRequest, HttpResponse.BodyHandlers.ofString());
-        
+        log.info("Got response code " + dlResult.statusCode());
         if(dlResult.statusCode() == 200) {
             List<SittingSpotOutDTO> dlData = (new ObjectMapper()).readerForListOf(SittingSpotOutDTO.class).readValue(dlResult.body());
 
             // update our data layer with new entries from osm
             var newSpots = osmData.stream().filter(e -> !dlData.stream().anyMatch(s -> s.id() == e.id())).toList();
             for(var newSpot : newSpots) {
-                var dlPostRequest = HttpRequest.newBuilder().uri(URI.create("http://" + sittingspotdlUrl + "/")).POST(HttpRequest.BodyPublishers.ofString(new ObjectMapper().writeValueAsString(newSpot))).build();
+                var dlPostRequest = HttpRequest.newBuilder().uri(URI.create("http://" + sittingspotdlUrl)).POST(HttpRequest.BodyPublishers.ofString(new ObjectMapper().writeValueAsString(newSpot))).build();
                 client.send(dlPostRequest, HttpResponse.BodyHandlers.ofString());
             }
             
