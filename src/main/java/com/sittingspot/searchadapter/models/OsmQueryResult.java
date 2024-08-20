@@ -9,7 +9,7 @@ import java.util.Map;
 public class OsmQueryResult {
 
     public record Osm3s(String timestamp_osm_base, String copyright){};
-    public record OsmQueryElement(String type, Integer id, double lat, double lon, Map<String,String> tags){};
+    public record OsmQueryElement(String type, double id, double lat, double lon, Map<String,String> tags){};
 
     private double version;
     private String generator;
