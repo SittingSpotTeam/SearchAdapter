@@ -21,6 +21,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Log4j2
 @RestController
@@ -104,7 +105,9 @@ public class SearchAdapterController {
 
             log.info("Sending request: " + "http://" + sittingspotdlUrl + " for each spot found");
             // update our data layer with new entries from osm
-            var newSpots = osmData.stream().filter(e -> !dlData.stream().anyMatch(s -> s.id() == e.id())).toList();
+            var newSpots = osmData.stream().filter(e -> dlData.stream().noneMatch(s -> Objects.equals(s.id(), e.id()))).toList();
+            log.info("New spots: "+newSpots.stream().map(e -> e.id()).toList());
+            log.info("DL spots: "+dlData.stream().map(e -> e.id()).toList());
             for(var newSpot : newSpots) {
                 var dlPostRequest = HttpRequest.newBuilder()
                         .uri(URI.create("http://" + sittingspotdlUrl))
