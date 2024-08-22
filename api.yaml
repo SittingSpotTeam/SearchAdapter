@@ -4,7 +4,7 @@ info:
   description: Adapter on internal data layer and extarnal services for sitting spots
   version: 1.0.0
 servers:
-  - url: https://search-adapter/api/v1
+  - url: http://searchadapter/api/v1
 paths:
   /:
     get:
